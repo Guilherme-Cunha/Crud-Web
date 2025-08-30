@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Endereços</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="shortcut icon" href="#">
+</head>
+<body>
+<div class="container">
+  <h2>Cadastro de Endereços</h2>
+  <form id="cadastroForm">
+    <div class="form-group">
+      <label for="cep">CEP</label>
+      <input type="text" class="form-control" id="cep" placeholder="Digite o CEP" required>
+    </div>
+    <div class="form-group">
+      <label for="rua">Rua</label>
+      <input type="text" class="form-control" id="rua" placeholder="Rua" required>
+    </div>
+    <div class="form-group">
+      <label for="bairro">Bairro</label>
+      <input type="text" class="form-control" id="bairro" placeholder="Bairro" required>
+    </div>
+    <div class="form-group">
+      <label for="cidade">Cidade</label>
+      <input type="text" class="form-control" id="cidade" placeholder="Cidade" required>
+    </div>
+    <div class="form-group">
+      <label for="estado">Estado</label>
+      <input type="text" class="form-control" id="estado" placeholder="Estado" required>
+    </div>
+    <div class="form-group">
+      <label for="pais">País</label>
+      <input type="text" class="form-control" id="pais" placeholder="País" required>
+    </div>
+	<div class="form-group form-check">
+		<input type="checkbox" class="form-check-input" id="endereco_principal">
+		<label class="form-check-label" for="endereco_principal">Endereço principal:</label>
+	</div>
+	<div class="form-group">
+		<label for="cliente_id">ID do Cliente</label>
+		<input type="number" class="form-control" id="cliente_id" placeholder="Digite o ID do Cliente">
+	</div>
+    <button type="submit" class="btn btn-primary">Salvar</button>
+  </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/alasql@latest"></script>
+<script>
+	alasql(`CREATE localStorage DATABASE IF NOT EXISTS agrosqldb;
+		ATTACH localStorage DATABASE agrosqldb;
+		USE agrosqldb;`);
+
+	alasql(`CREATE TABLE IF NOT EXISTS usuarios (nome STRING PRIMARY KEY, senha STRING)`);
+	alasql(`CREATE TABLE IF NOT EXISTS clientes (id INT AUTOINCREMENT PRIMARY KEY, nome STRING, cpf STRING UNIQUE, aniversario DATE, telefone STRING, celular STRING)`);
+	alasql(`CREATE TABLE IF NOT EXISTS enderecos (
+				id INT AUTOINCREMENT PRIMARY KEY,
+				cliente_id INT,
+				cep STRING,
+				rua STRING,
+				bairro STRING,
+				cidade STRING,
+				estado STRING,
+				pais STRING,
+				endereco_principal BOOLEAN,
+				FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+			)`);
+</script>
+<script>
+	$(document).ready(function(){
+		// Obter o ID do registro da URL
+		var urlParams = new URLSearchParams(window.location.search);
+		var id = parseInt(urlParams.get('id'));
+		var cep = urlParams.get('cep');
+		var rua = urlParams.get('rua');
+		var bairro = urlParams.get('bairro');
+		var cidade = urlParams.get('cidade');
+		var estado = urlParams.get('estado');
+		var pais = urlParams.get('pais');
+		var endereco_principal = urlParams.get('endereco_principal');
+		var cliente_id = urlParams.get('cliente_id');
+
+		// Preencher os campos do formulário com os dados recebidos
+		$('#cep').val(cep);
+		$('#rua').val(rua);
+		$('#bairro').val(bairro);
+		$('#cidade').val(cidade);
+		$('#estado').val(estado);
+		$('#pais').val(pais);
+		$('#endereco_principal').prop('checked', endereco_principal === 'true'); // Converter a string 'true' em um booleano
+		$('#cliente_id').val(cliente_id);
+
+		// Se houver um ID na URL, significa que estamos editando um registro existente
+		if (id) {
+			// Obter os dados do registro a partir do ID
+			var registro = alasql('SELECT * FROM enderecos WHERE id = ?', [id])[0];
+
+			// Preencher os campos do formulário com os dados do registro existente
+			$('#cep').val(registro.cep);
+			$('#rua').val(registro.rua);
+			$('#bairro').val(registro.bairro);
+			$('#cidade').val(registro.cidade);
+			$('#estado').val(registro.estado);
+			$('#pais').val(registro.pais);
+			$('#endereco_principal').prop('checked', registro.endereco_principal === 1);
+			$('#cliente_id').val(registro.cliente_id);
+		}
+		
+		// Função para preencher os campos com base no CEP
+		function preencherCamposComCEP(cep) {
+		  // Verificar se o CEP possui um formato válido
+		  if (cep.length !== 8 || !(/^\d+$/.test(cep))) {
+			$('#rua').val('');
+			$('#bairro').val('');
+			$('#cidade').val('');
+			$('#estado').val('');
+			$('#pais').val('');
+			return;
+		  }
+
+		  // Consultar a API de CEP (substitua pela URL da sua API de consulta de CEP)
+		  $.getJSON('https://viacep.com.br/ws/' + cep + '/json/', function(data) {
+			// Verificar se a consulta retornou dados válidos
+			if (!data.erro) {
+			  // Preencher os campos com os dados do endereço retornado pela API
+			  $('#rua').val(data.logradouro);
+			  $('#bairro').val(data.bairro);
+			  $('#cidade').val(data.localidade);
+			  $('#estado').val(data.uf);
+			  $('#pais').val('Brasil'); // Considerando que o CEP consultado é brasileiro
+			} else {
+				$('#rua').val('');
+				$('#bairro').val('');
+				$('#cidade').val('');
+				$('#estado').val('');
+				$('#pais').val('');
+			}
+		  });
+		}
+		
+		// Evento de saída do campo CEP
+		$('#cep').blur(function() {
+		  // Obter o valor do CEP digitado
+		  var cep = $(this).val();
+		  // Chamar a função para preencher os demais campos com base no CEP
+		  preencherCamposComCEP(cep);
+		});
+
+		// Evento de envio do formulário de cadastro
+		$('#cadastroForm').submit(function(e){
+			e.preventDefault();
+			// Obtendo os valores dos campos do formulário de edição
+			var cep = $('#cep').val();
+			var rua = $('#rua').val();
+			var bairro = $('#bairro').val();
+			var cidade = $('#cidade').val();
+			var estado = $('#estado').val();
+			var pais = $('#pais').val();
+			var endereco_principal = $('#endereco_principal').prop('checked') ? 1 : 0;
+			var cliente_id = $('#cliente_id').val();
+
+			var endereco = alasql('SELECT * FROM enderecos WHERE cliente_id = ?', [cliente_id]);
+			var enderecoPrincipal = alasql('SELECT * FROM enderecos WHERE endereco_principal = ? and cliente_id = ?', [1, cliente_id])[0];
+			var cliente = alasql('SELECT * FROM clientes WHERE id = ?', [parseInt(cliente_id)])[0];
+
+			if (cliente == undefined) {
+				alert('Cliente informado não cadastrado!');
+				return;
+			}
+
+			if (endereco.length > 0 && endereco_principal == 0 && enderecoPrincipal == undefined) {
+				alert('Um ou mais endereços cadastrados, marque este endereço como principal!');
+				return;
+			}
+
+			if (endereco_principal == 1) {
+				var endereco = alasql('SELECT * FROM enderecos WHERE endereco_principal = ?', [1])[0];
+
+				if (id) {
+					if (endereco){
+						if (endereco.id != id) {
+							alasql('UPDATE enderecos SET endereco_principal = ? WHERE id = ? and cliente_id = ?', [0, endereco.id, cliente_id]);
+						}
+					}
+				}
+			}
+
+			// Verificar se é uma edição ou um novo registro
+			if (id) {
+				// É uma edição, atualizar o registro existente
+				alasql('UPDATE enderecos SET cep = ?, rua = ?, bairro = ?, cidade = ?, estado = ?, pais = ?, endereco_principal = ?, cliente_id = ? WHERE id = ?', [cep, rua, bairro, cidade, estado, pais, endereco_principal, cliente_id, id]);
+			} else {
+				// É um novo registro, inserir no banco de dados
+				alasql('INSERT INTO enderecos (cep, rua, bairro, cidade, estado, pais, endereco_principal, cliente_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [cep, rua, bairro, cidade, estado, pais, endereco_principal, cliente_id]);
+			}
+
+			// Redirecionar para a página de consulta de endereços após salvar
+			window.location.href = 'Consulta_enderecos.html';
+		});
+	});
+</script>
+</body>
+</html>

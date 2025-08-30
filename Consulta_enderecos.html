@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de endereços</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="shortcut icon" href="#">
+</head>
+<body>
+<div class="container">
+  <h2>Consulta de endereços</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>CEP</th>
+        <th>Rua</th>
+        <th>Bairro</th>
+        <th>Cidade</th>
+        <th>Estado</th>
+        <th>Pais</th>
+        <th>Endereço Principal</th>
+        <th>Cliente</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="ConsultaEnderecos">
+      <!-- Consulta de endereços será preenchido dinamicamente aqui -->
+    </tbody>
+  </table>
+  <a href="Cadastro_enderecos.html" class="btn btn-primary">Novo</a>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/alasql@latest"></script>
+<script>
+    alasql(`CREATE localStorage DATABASE IF NOT EXISTS agrosqldb;
+        ATTACH localStorage DATABASE agrosqldb;
+        USE agrosqldb;`);
+
+    alasql(`CREATE TABLE IF NOT EXISTS usuarios (nome STRING PRIMARY KEY, senha STRING)`);
+    alasql(`CREATE TABLE IF NOT EXISTS clientes (id INT AUTOINCREMENT PRIMARY KEY, nome STRING, cpf STRING UNIQUE, aniversario DATE, telefone STRING, celular STRING)`);
+    alasql(`CREATE TABLE IF NOT EXISTS enderecos (
+				id INT AUTOINCREMENT PRIMARY KEY,
+				cliente_id INT,
+				cep STRING,
+				rua STRING,
+				bairro STRING,
+				cidade STRING,
+				estado STRING,
+				pais STRING,
+				endereco_principal BOOLEAN,
+				FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+			)`);
+
+    $(document).ready(function(){
+      // Buscar endereços do banco de dados
+      var enderecos = alasql('SELECT * FROM enderecos');
+      enderecos.forEach(function(endereco){
+        $('#ConsultaEnderecos').append(`
+		<tr>
+			<td>${endereco.cep}</td>
+			<td>${endereco.rua}</td>
+			<td>${endereco.bairro}</td>
+			<td>${endereco.cidade}</td>
+			<td>${endereco.estado}</td>
+			<td>${endereco.pais}</td>
+			<td>${endereco.endereco_principal ? 'Sim' : 'Não'}</td>
+			<td>${endereco.cliente_id}</td>
+			<td>
+				<div class="btn-group">
+					<button class="btn btn-primary btn-edit" data-id="${endereco.id}">Editar</button>
+					<button class="btn btn-danger btn-delete" data-id="${endereco.id}">Excluir</button>
+				</div>
+			</td>
+		</tr>
+        `);
+      });
+
+      // Abrir tela de cadastro de endereços para edição ao clicar no botão "Editar"
+      $(document).on('click', '.btn-edit', function(){
+        var id = $(this).data('id');
+        var endereco = alasql('SELECT * FROM enderecos WHERE id = ?', [id])[0];
+        window.location.href = `Cadastro_enderecos.html?id=${endereco.id}&cep=${endereco.cep}&rua=${endereco.rua}&bairro=${endereco.bairro}&cidade=${endereco.cidade}&estado=${endereco.estado}&pais=${endereco.pais}&endereco_principal=${endereco.endereco_principal}&cliente_id=${endereco.cliente_id}`;
+      });
+
+	  $(document).on('click', '.btn-delete', function(){
+		if (confirm("Tem certeza de que deseja excluir este registro?")) {
+			var id = $(this).data('id');
+			alasql('DELETE FROM enderecos WHERE id = ?', [id])[0];
+			window.location.reload();
+		} else {
+			// Se o usuário cancelar, não fazer nada
+			return false; // Evitar a execução padrão do clique
+		}
+      });
+    });
+</script>
+</body>
+</html>

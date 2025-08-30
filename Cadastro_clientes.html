@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	  <meta charset="UTF-8">
+	  <meta nome="viewport" content="width=device-width, initial-scale=1.0">
+	  <title>Adicionar clientes</title>
+	  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	  <link rel="shortcut icon" href="#">
+	</head>
+	<body>
+		<div class="container">
+		  <h2>Adicionar clientes</h2>
+		  <form id="FormCliente">
+			<div class="form-group">
+			  <label for="nome">Nome:</label>
+			  <input type="text" class="form-control" id="nome" required>
+			</div>
+			<div class="form-group">
+			  <label for="cpf">CPF:</label>
+			  <input type="text" class="form-control" id="cpf" onkeydown="formatar('###.###.###-##',this)" required>
+			</div>
+			<div class="form-group">
+			  <label for="aniversario">Aniversário:</label>
+			  <input type="date" class="form-control" id="aniversario" required>
+			</div>
+			<div class="form-group">
+			  <label for="telefone">Telefone:</label>
+			  <input type="tel" class="form-control" id="telefone" onkeydown="formatar('(##) #####-####',this)">
+			</div>
+			<div class="form-group">
+			  <label for="celular">Celular:</label>
+			  <input type="text" class="form-control" id="celular" onkeydown="formatar('(##) #####-####',this)">
+			</div>
+			<button type="submit" class="btn btn-primary">Cadastrar</button>
+		  </form>
+		  <a href="Consulta_enderecos.html" class="btn btn-secondary mt-3">Consultar endereços</a>
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/alasql@latest"></script>
+		<script>
+			alasql(`CREATE localStorage DATABASE IF NOT EXISTS agrosqldb;
+				ATTACH localStorage DATABASE agrosqldb;
+				USE agrosqldb;`);
+
+			alasql(`CREATE TABLE IF NOT EXISTS usuarios (nome STRING PRIMARY KEY, senha STRING)`);
+			alasql(`CREATE TABLE IF NOT EXISTS clientes (id INT AUTOINCREMENT PRIMARY KEY, nome STRING, cpf STRING UNIQUE, aniversario DATE, telefone STRING, celular STRING)`);
+			alasql(`CREATE TABLE IF NOT EXISTS enderecos (
+				id INT AUTOINCREMENT PRIMARY KEY,
+				cliente_id INT,
+				cep STRING,
+				rua STRING,
+				bairro STRING,
+				cidade STRING,
+				estado STRING,
+				pais STRING,
+				endereco_principal BOOLEAN,
+				FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+			)`);
+		</script>
+		<script>
+			function formatar(mascara, documento) {
+				let i = documento.value.length;
+				let saida = '#';
+				let texto = mascara.substring(i);
+				while (texto.substring(0, 1) != saida && texto.length ) {
+				documento.value += texto.substring(0, 1);
+				i++;
+				texto = mascara.substring(i);
+				}
+			}
+
+			$(document).ready(function(){
+				var urlParams = new URLSearchParams(window.location.search);
+				var id = parseInt(urlParams.get('id'));
+				var nome = urlParams.get('nome');
+				var cpf = urlParams.get('cpf');
+				var aniversario = urlParams.get('aniversario');
+				var telefone = urlParams.get('telefone');
+				var celular = urlParams.get('celular');
+
+				// Preencher os campos do formulário com os dados recebidos
+				$('#nome').val(nome);
+				$('#cpf').val(cpf);
+				$('#aniversario').val(aniversario);
+				$('#telefone').val(telefone);
+				$('#celular').val(celular);
+				
+				$('#FormCliente').submit(function(e){
+					e.preventDefault();
+					var nome = $('#nome').val();
+					var cpf = $('#cpf').val();
+					var aniversario = $('#aniversario').val();
+					var telefone = $('#telefone').val();
+					var celular = $('#celular').val();
+					
+					// Check if the CPF already exists
+					var clienteExiste = alasql(`SELECT * FROM clientes WHERE cpf = ?`, [cpf]);
+
+					if (id) {
+						alasql('UPDATE clientes SET nome = ?, cpf = ?, aniversario = ?, telefone = ?, celular = ?', [nome, cpf, aniversario, telefone, celular]);
+					} else {
+						if(clienteExiste.length > 0) {
+							alert('Já existe um cliente cadastrado com o CPF informado!');
+							return;
+						}
+
+						alasql(`INSERT INTO clientes (nome, cpf, aniversario, telefone, celular) VALUES (?, ?, ?, ?, ?)`, [nome, cpf, aniversario, telefone, celular]);
+					}
+					
+					// Redirect to customer list page
+					window.location.href = 'Consulta_clientes.html';
+				});
+			});
+		</script>
+	</body>
+</html>

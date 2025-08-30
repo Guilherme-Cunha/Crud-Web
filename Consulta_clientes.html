@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	  <meta charset="UTF-8">
+	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	  <title>Consulta de clientes</title>
+	  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	</head>
+	<body>
+		<div class="container">
+		  <h2>Consulta de clientes</h2>
+		  <table class="table">
+			<thead>
+			  <tr>
+				<th>Código</th>
+				<th>Nome</th>
+				<th>CPF</th>
+				<th>Data de Aniversário</th>
+				<th>Telefone</th>
+				<th>Celular</th>
+				<th>Ações</th>
+			  </tr>
+			</thead>
+			<tbody id="consultaClientes">
+			</tbody>
+		  </table>
+		  <a href="Cadastro_clientes.html" class="btn btn-primary">Novo</a>
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/alasql@latest"></script>
+		<script>
+			alasql(`CREATE localStorage DATABASE IF NOT EXISTS agrosqldb;
+				ATTACH localStorage DATABASE agrosqldb;
+				USE agrosqldb;`);
+
+			alasql(`CREATE TABLE IF NOT EXISTS usuarios (nome STRING PRIMARY KEY, senha STRING)`);
+			alasql(`CREATE TABLE IF NOT EXISTS clientes (id INT AUTOINCREMENT PRIMARY KEY, nome STRING, cpf STRING UNIQUE, aniversario DATE, telefone STRING, celular STRING)`);
+			alasql(`CREATE TABLE IF NOT EXISTS enderecos (
+				id INT AUTOINCREMENT PRIMARY KEY,
+				cliente_id INT,
+				cep STRING,
+				rua STRING,
+				bairro STRING,
+				cidade STRING,
+				estado STRING,
+				pais STRING,
+				endereco_principal BOOLEAN,
+				FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+			)`);
+		</script>
+		<script>
+		  $(document).ready(function(){
+			// Buscar clientes no banco de dados
+			var clientes = alasql('SELECT * FROM clientes');
+			clientes.forEach(function(cliente){
+				var novaData = new Date(cliente.aniversario);
+				var data_aniversario = novaData.toLocaleDateString('pt-BR', {timeZone: 'UTC',});
+			  $('#consultaClientes').append(`
+				<tr>
+					<td>${cliente.id}</td>
+					<td>${cliente.nome}</td>
+				  	<td>${cliente.cpf}</td>
+				  	<td>${data_aniversario}</td>
+				  	<td>${cliente.telefone}</td>
+				  	<td>${cliente.celular}</td>
+				  	<td>
+						<div class="btn-group">
+							<button class="btn btn-primary btn-edit" data-id="${cliente.id}">Editar</button>
+							<button class="btn btn-danger btn-delete" data-id="${cliente.id}">Excluir</button>
+						</div>
+					</td>
+				</tr>
+			  `);
+			});
+
+			$(document).on('click', '.btn-edit', function(){
+				var id = $(this).data('id');
+				debugger
+				var cliente = alasql('SELECT * FROM clientes WHERE id = ?', [id])[0];
+				window.location.href = `Cadastro_clientes.html?id=${cliente.id}&nome=${cliente.nome}&cpf=${cliente.cpf}&aniversario=${cliente.aniversario}&telefone=${cliente.telefone}&celular=${cliente.celular}`;
+			});
+
+			$(document).on('click', '.btn-delete', function(){
+				if (confirm("Tem certeza de que deseja excluir este registro?")) {
+					var id = $(this).data('id');
+					alasql('DELETE FROM clientes WHERE id = ?', [id])[0];
+					window.location.reload();
+				} else {
+					// Se o usuário cancelar, não fazer nada
+					return false; // Evitar a execução padrão do clique
+				}
+			});
+		  });
+		</script>
+	</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+
+    <style>
+        /* Estilo personalizado para a tela de login */
+        .login-container {
+            max-width: 400px;
+            margin: auto;
+            margin-top: 100px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.2); /* Adiciona sombra para efeito 3D */
+            transition: box-shadow 0.3s ease; /* Adiciona transição suave na sombra */
+        }
+
+        .login-container:hover {
+            box-shadow: 0px 0px 50px rgba(0, 0, 0, 0.3); /* Aumenta a sombra ao passar o mouse */
+        }
+
+        .form-control:focus {
+            box-shadow: none; /* Remove a sombra do input quando está focado */
+        }
+        .texto-negrito {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="login-container">
+        <h2 class="text-center mb-4">Login</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="nome" class="texto-negrito">Usuário</label>
+                <input type="text" class="form-control" id="nome" placeholder="Digite seu usuário">
+            </div>
+            <div class="form-group">
+                <label for="senha" class="texto-negrito">Senha</label>
+                <input type="password" class="form-control" id="senha" placeholder="Digite sua senha">
+            </div>
+            <button type="button" class="btn btn-primary btn-block" id="btnEntrar">Entrar</button>
+        </form>
+        <div class="options">
+            <a href="#" title="Cadastrar novo usuário" data-toggle="modal" data-target="#cadastroModal">Novo usuário</a>
+            <a href="#" title="Realizar upload de banco de dados" class="float-right" data-toggle="modal" data-target="#configModal">Configurações</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de cadastro -->
+<div class="modal fade" id="cadastroModal" tabindex="-1" role="dialog" aria-labelledby="cadastroModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cadastroModalLabel">Cadastrar Novo Usuário</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulário de cadastro de usuário -->
+                <form id="cadastroForm">
+                    <div class="form-group">
+                        <label for="newUsername">Novo Usuário</label>
+                        <input type="text" class="form-control" id="newUsername" placeholder="Digite o novo usuário" autocomplete="off" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Senha</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="newPassword" placeholder="Digite a senha" autocomplete="off" required>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary toggle-password" type="button">
+                                    <i class="far fa-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Senha</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="confirmPassword" placeholder="Confirme a senha" autocomplete="off" required>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary toggle-confirm-password" type="button">
+                                    <i class="far fa-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Cadastrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de configurações -->
+<div class="modal fade" id="configModal" tabindex="-1" role="dialog" aria-labelledby="configModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="configModalLabel">Faça o upload da base dados</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Formulário para seleção do arquivo JSON -->
+          <form id="jsonUploadForm">
+            <div class="form-group">
+              <label for="jsonFile">Selecione um arquivo JSON:</label>
+              <input type="file" class="form-control-file" id="jsonFile" accept=".json" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Enviar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script src="https://cdn.jsdelivr.net/npm/alasql@latest"></script>
+
+<script>
+    alasql(`CREATE localStorage DATABASE IF NOT EXISTS agrosqldb;
+        ATTACH localStorage DATABASE agrosqldb;
+        USE agrosqldb;`);
+
+    alasql(`CREATE TABLE IF NOT EXISTS usuarios (nome STRING PRIMARY KEY, senha STRING)`);
+    alasql(`CREATE TABLE IF NOT EXISTS clientes (id INT AUTOINCREMENT PRIMARY KEY, nome STRING, cpf STRING UNIQUE, aniversario DATE, telefone STRING, celular STRING)`);
+    alasql(`CREATE TABLE IF NOT EXISTS enderecos (
+				id INT AUTOINCREMENT PRIMARY KEY,
+				cliente_id INT,
+				cep STRING,
+				rua STRING,
+				bairro STRING,
+				cidade STRING,
+				estado STRING,
+				pais STRING,
+				endereco_principal BOOLEAN,
+				FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+			)`);
+
+    var usuarioExistente = alasql(`SELECT * FROM usuarios WHERE nome = ?`, "adm");
+    if(usuarioExistente.length <= 0) {
+        alasql(`INSERT INTO usuarios (nome, senha) VALUES (?, ?)`, ["adm", "123"]);
+    }
+
+    // Evento de envio do formulário de cadastro
+    $('#cadastroForm').submit(function(e){
+        e.preventDefault();
+        var novoNome = $('#newUsername').val();
+        var novaSenha = $('#newPassword').val();
+        var confirmarSenha = $('#confirmPassword').val();
+
+        if (novaSenha !== confirmarSenha) {
+            // Se as senhas não coincidirem, mostra mensagem de erro
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'As senhas não coincidem'
+            });
+            return; // Impede o envio do formulário
+        }
+
+        // Verifica se o usuário já existe
+        var usuarioExistente = alasql(`SELECT * FROM usuarios WHERE nome = ?`, [novoNome]);
+        if(usuarioExistente.length > 0) {
+            // Se o usuário já existir, mostra mensagem de erro
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'Usuário já cadastrado'
+            });
+        } else {
+            // Caso contrário, insere o novo usuário no banco de dados
+            alasql(`INSERT INTO usuarios (nome, senha) VALUES (?, ?)`, [novoNome, novaSenha]);
+            // Mostra mensagem de sucesso
+            Swal.fire({
+                icon: 'success',
+                title: 'Sucesso',
+                text: 'Novo usuário cadastrado'
+            });
+            // Limpa os campos do formulário
+            $('#newUsername').val('');
+            $('#newPassword').val('');
+            $('#confirmPassword').val('');
+            // Fecha a modal
+            $('#cadastroModal').modal('hide');
+        }
+    });
+
+    $(document).ready(function() {
+        $('#btnEntrar').click(function() {
+            var nome = $('#nome').val();
+            var senha = $('#senha').val();
+            var usuario = alasql('SELECT * FROM usuarios WHERE nome = ? AND senha = ?', [nome, senha]);
+            if(usuario.length > 0) {
+                // Sucesso no login, redireciona para página de listagem de clientes
+                window.location.href = 'index.html';
+            } else {
+                // Falha no login, apresenta mensagem genérica ao usuário
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Falha ao realizar login',
+                    text: 'Dados incorretos'
+                });
+            }
+        });
+
+        $('#cadastroModal').on('shown.bs.modal', function () {
+            // Limpa os campos do formulário de cadastro ao mostrar a modal
+            $('#newUsername').val('');
+            $('#newPassword').val('');
+            $('#confirmPassword').val('');
+        });
+
+        $('.toggle-password').click(function() {
+            var input = $($(this).closest('.input-group').find('input'));
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                $(this).find('i').removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                input.attr('type', 'password');
+                $(this).find('i').removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+
+        $('.toggle-confirm-password').click(function() {
+            var input = $($(this).closest('.input-group').find('input'));
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                $(this).find('i').removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                input.attr('type', 'password');
+                $(this).find('i').removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+    });
+
+    // Evento de envio do formulário de upload de arquivo JSON
+    $('#jsonUploadForm').submit(function(e) {
+        e.preventDefault();
+        
+        // Obter o arquivo selecionado pelo usuário
+        var file = $('#jsonFile')[0].files[0];
+        if (file) {
+        // Ler o conteúdo do arquivo como texto
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            var jsonContent = event.target.result;
+            
+            try {
+            // Converter o conteúdo JSON para um objeto JavaScript
+            var data = JSON.parse(jsonContent);
+            
+            // Popule a base de dados com os dados do arquivo JSON
+            if (data.clientes && data.enderecos) {
+                // Inserir clientes
+                data.clientes.forEach(function(cliente) {
+                  alasql('INSERT INTO clientes (nome, cpf, aniversario, telefone, celular) VALUES (?, ?, ?, ?, ?)', [cliente.nome, cliente.cpf, cliente.aniversario, cliente.telefone, cliente.celular]);
+                });
+
+                // Inserir endereços
+                data.enderecos.forEach(function(endereco) {
+                  alasql('INSERT INTO enderecos (cep, rua, bairro, cidade, estado, pais, endereco_principal, cliente_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [endereco.cep, endereco.rua, endereco.bairro, endereco.cidade, endereco.estado, endereco.pais, endereco.endereco_principal, endereco.cliente_id]);
+                });
+
+                // Fechar a modal após o processamento do arquivo JSON
+                $('#configModal').modal('hide');
+
+                // Exibir uma mensagem de sucesso para o usuário
+                alert('Dados inseridos com sucesso.');
+              } else {
+                throw new Error('O arquivo JSON não contém os dados necessários.');
+              }
+            } catch (error) {
+            // Se houver um erro ao analisar o arquivo JSON, exiba uma mensagem de erro
+            alert('Erro ao processar o arquivo JSON: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+        } else {
+        // Se nenhum arquivo foi selecionado, exiba uma mensagem de erro
+        alert('Selecione um arquivo JSON.');
+        }
+    });
+</script>
+
+</body>
+</html>

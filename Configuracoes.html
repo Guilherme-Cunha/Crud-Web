@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	  <meta charset="UTF-8">
+	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	  <title>Configurações</title>
+	  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	  <link rel="shortcut icon" href="#">
+	</head>
+	<body>
+		<div class="container">
+		  <h2>Configurações</h2>
+		  <button id="exportBtn" class="btn btn-primary">Exportar Base de dados</button>
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/alasql@latest"></script>
+		<script>
+			alasql(`CREATE localStorage DATABASE IF NOT EXISTS agrosqldb;
+				ATTACH localStorage DATABASE agrosqldb;
+				USE agrosqldb;`);
+
+			alasql(`CREATE TABLE IF NOT EXISTS usuarios (nome STRING PRIMARY KEY, senha STRING)`);
+			alasql(`CREATE TABLE IF NOT EXISTS clientes (id INT AUTOINCREMENT PRIMARY KEY, nome STRING, cpf STRING UNIQUE, aniversario DATE, telefone STRING, celular STRING)`);
+			alasql(`CREATE TABLE IF NOT EXISTS enderecos (
+				id INT AUTOINCREMENT PRIMARY KEY,
+				cliente_id INT,
+				cep STRING,
+				rua STRING,
+				bairro STRING,
+				cidade STRING,
+				estado STRING,
+				pais STRING,
+				endereco_principal BOOLEAN,
+				FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+			)`);
+		</script>
+		<script>
+		  $(document).ready(function(){
+			$('#exportBtn').click(function(){
+			  // Fetch data from the database
+			  var data = {
+				clientes: alasql('SELECT * FROM clientes'),
+				enderecos: alasql('SELECT * FROM enderecos')
+			  };
+			  
+			  // Convert data to JSON format
+			  var jsonData = JSON.stringify(data);
+			  
+			  // Create a Blob with the JSON data
+			  var blob = new Blob([jsonData], { type: 'application/json' });
+			  
+			  // Create a download link
+			  var url = URL.createObjectURL(blob);
+			  var a = document.createElement('a');
+			  a.href = url;
+			  a.download = 'agro_database.json';
+			  
+			  // Trigger click event to start download
+			  a.click();
+			});
+		  });
+		</script>
+	</body>
+</html>
